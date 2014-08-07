@@ -1,4 +1,4 @@
-vim-sencha-refer
+vim-sencha-util
 ================
 
 sencha vim plugin
