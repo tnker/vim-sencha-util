@@ -11,5 +11,7 @@ let g:loaded_sencha_mvvm_toggle = 1
 let s:save_cpo = &cpo
 set cpo&vim
 
+command! -nargs=0 SenchaMVVMToggle call sencha_util#Toggle(expand("%:p"))
+
 let &cpo = s:save_cpo
 unlet s:save_cpo

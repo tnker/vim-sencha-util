@@ -2,17 +2,11 @@
 " Last Change: 2014/08/07
 " Maintainer: Tanaka Yuuya <yuuya@tnker.com>
 
+
 let s:save_cpo = &cpo
 set cpo&vim
 
-if !hasmapto("<Plug>SenchaToggle")
-    map <unique> <C-@> <Plug>SenchaToggle
-endif
-
-noremap <unique> <script> <Plug>SenchaToggle <SID>Toggle
-noremap <SID>Toggle :call <SID>Toggle(expand("%:p"))<CR>
-
-function! s:Toggle(param)
+function! sencha_util#Toggle(param)
     let data = s:ParseParam(a:param)
     let name = data.name
     if name =~ "Controller$"
