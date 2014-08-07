@@ -5,6 +5,13 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
+if !hasmapto("<Plug>SenchaToggle")
+    map <unique> <C-@> <Plug>SenchaToggle
+endif
+
+noremap <unique> <script> <Plug>SenchaToggle <SID>Toggle
+noremap <SID>Toggle :call <SID>Toggle(expand("%:p"))<CR>
+
 function! s:Toggle(param)
     let data = s:ParseParam(a:param)
     let name = data.name
