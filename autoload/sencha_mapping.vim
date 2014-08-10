@@ -5,8 +5,8 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
-let s:V    = vital#of('vital')
-let s:JSON = s:V.import('Web.JSON')
+"let s:V    = vital#of('vital')
+"let s:JSON = s:V.import('Web.JSON')
 
 function! sencha_mapping#Mapping(param)
     let data = s:ParseParam(a:param)
