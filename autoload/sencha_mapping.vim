@@ -77,7 +77,7 @@ function! s:ParseParam(param)
         let ext = split(filename, "\\.")[1]
         let param = {"paths": paths, "filename": filename, "name": name, "ext": ext}
     catch
-        param = {"paths": []}
+        let param = {"paths": []}
     endtry
     return param
 endfunction
