@@ -8,11 +8,18 @@ set cpo&vim
 "let s:V    = vital#of('vital')
 "let s:JSON = s:V.import('Web.JSON')
 
+" ----------
+" sencha functions
 function! sencha_mapping#Mapping(param)
     let data = s:ParseParam(a:param)
     let path = []
     while len(data.paths) > 0
         let p = "/" . join(data.paths, "/")
+        let s = getftype(p . "/streamline.json")
+        if s != ""
+            echo "streamline application"
+            break
+        endif
         let f = getftype(p . "/.sencha")
         if f != ""
             let info = system("cat " . p . "/app.json")
@@ -49,7 +56,6 @@ function! s:GetFilePath(pkgs)
     if len(a:pkgs) != 0
         let pkgs = a:pkgs
         let app = remove(pkgs, 0)
-        echo app
         if app == "Ext"
             call insert(pkgs, "ext/src", 0)
         else
@@ -61,11 +67,19 @@ function! s:GetFilePath(pkgs)
     endif
 endfunction
 
+" ----------
+" streamline functions
+function! s:StreamlineMapping()
+endfunction
+
+" ----------
+" utility functions
 function! s:OpenClassFile(path)
-    "echo a:path
     let file = getftype(a:path)
     if file != ""
         exe "tabnew " . a:path
+    else
+        echo "not found class file: " . a:path
     endif
 endfunction
 
