@@ -17,7 +17,7 @@ function! sencha_mapping#Mapping(param)
         let p = "/" . join(data.paths, "/")
         let s = getftype(p . "/streamline.json")
         if s != ""
-            echo "streamline application"
+            call s:StreamlineMapping(p)
             break
         endif
         let f = getftype(p . "/.sencha")
@@ -69,7 +69,25 @@ endfunction
 
 " ----------
 " streamline functions
-function! s:StreamlineMapping()
+function! s:StreamlineMapping(rPath)
+    let pkgs = s:GetClassName(getline("."))
+
+    if pkgs[0] == "Streamline"
+        call insert(pkgs, "app", 1)
+    else
+        call insert(pkgs, "app", 2)
+    endif
+
+    let path = join(pkgs, "/") . ".js"
+    if matchstr(path, ":") != ""
+        let lang = split(path, ":")
+        call remove(lang, 1)
+        call add(lang, "locales/lang-ja.json")
+        let path = join(lang, "/")
+        call s:OpenClassFile(join([a:rPath, path], "/"))
+    else
+        call s:OpenClassFile(join([a:rPath, path], "/"))
+    endif
 endfunction
 
 " ----------
