@@ -16,8 +16,13 @@ function! sencha_mapping#Mapping(param)
     while len(data.paths) > 0
         let p = "/" . join(data.paths, "/")
         let s = getftype(p . "/streamline.json")
+        let m = getftype(p . "/microfield.json")
         if s != ""
             call s:StreamlineMapping(p)
+            break
+        endif
+        if m != ""
+            call s:MicroFieldMapping(p)
             break
         endif
         let f = getftype(p . "/.sencha")
@@ -73,6 +78,29 @@ function! s:StreamlineMapping(rPath)
     let pkgs = s:GetClassName(getline("."))
 
     if pkgs[0] == "Streamline"
+        call insert(pkgs, "app", 1)
+    else
+        call insert(pkgs, "app", 2)
+    endif
+
+    let path = join(pkgs, "/") . ".js"
+    if matchstr(path, ":") != ""
+        let lang = split(path, ":")
+        call remove(lang, 1)
+        call add(lang, "locales/lang-ja.json")
+        let path = join(lang, "/")
+        call s:OpenClassFile(join([a:rPath, path], "/"))
+    else
+        call s:OpenClassFile(join([a:rPath, path], "/"))
+    endif
+endfunction
+
+" ----------
+" microfield functions
+function! s:MicroFieldMapping(rPath)
+    let pkgs = s:GetClassName(getline("."))
+
+    if pkgs[0] == "MicroField"
         call insert(pkgs, "app", 1)
     else
         call insert(pkgs, "app", 2)
