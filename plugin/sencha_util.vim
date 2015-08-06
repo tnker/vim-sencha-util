@@ -17,7 +17,7 @@ command! -nargs=0 SenchaMapping call sencha_mapping#Mapping(expand("%:p"))
 command! SenchaParserOpenViewModel call sencha_parser#openviewmodel(expand('%:p'))
 command! SenchaParserOpenViewController call sencha_parser#openviewcontroller(expand('%:p'))
 command! SenchaParserOpenExtend call sencha_parser#openextend(expand('%:p'))
-command! SenchaParserOpenCurrentLineClass call sencha_parser#opencurrentlineclass(expand('%:p'))
+command! SenchaParserReadCurrentLine call sencha_parser#readcurrentline(expand('%:p'))
 
 let &cpo = s:save_cpo
 unlet s:save_cpo

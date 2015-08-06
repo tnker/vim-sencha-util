@@ -14,6 +14,7 @@ class SenchaParser_Regex(object):
     Attributes:
         appname: アプリケーションの名前空間マッチ用
         framework_version: sencha.cfgからsdkバージョン抽出用
+        xtype_name: xtypeで指定されている文字列を取得する
         framework_name: sencha.cfgから利用SDKタイプ抽出用
         extend_comment: Doc形式のコメントから継承元クラス抽出用（overrideと併用）
         extend_property: コンフィグ内から継承元クラス抽出用（overrideと併用）
@@ -30,6 +31,7 @@ class SenchaParser_Regex(object):
     appname = re.compile('^([\w]+)\.')
     framework_version = re.compile('^[\s]*app.framework.version[\s]*=[\s]*([0-9¥.]+)$')
     framework_name = re.compile('^[\s]*app.framework[\s]*=[\s]*([a-zA-Z]+)$')
+    xtype_name = re.compile('^[\s]*xtype[\s]*:[\s]*\'([a-zA-Z\-\_]+)\'[\s\,]*$')
     extend_comment = re.compile('^.+@(extend|override)[ ]+(.+)')
     extend_property = re.compile('^.+(extend|override)[ :]+[ ]+\'(.+)\'')
     class_comment = re.compile('^.+@class[ ]+(.+)')
@@ -154,13 +156,35 @@ class SenchaParser(object):
                 vim.command('tabnew {0}'.format(path))
 
     # }}}
-    # {{{ get_class(line, is_path = True)
+    # {{{ read_line(line)
 
-    def get_class(self, line, is_path = True):
-        class_name = None
+    def read_line(self, line):
+        """
+        xtypeに指定されている文字列から取得
+        """
+        m = self.__re.xtype_name.search(line)
+        if m:
+            class_name = self.__bootstrap.search(
+                m.groups()[0],
+                'widget',
+                self.is_version('6'))
+            return self.get_class(class_name=class_name)
+        """
+        シングルクォーテーションで括られている
+        文字列からクラス名の取得を試みる
+        """
         m = self.__re.namespace.search(line)
         if m:
-            class_name = m.groups()[0]
+            return self.get_class(class_name=m.groups()[0])
+
+    # }}}
+    # {{{ get_class(line, class_name, is_path = True)
+
+    def get_class(self, line = None, class_name = None, is_path = True):
+        if not class_name:
+            m = self.__re.namespace.search(line)
+            if m:
+                class_name = m.groups()[0]
         if is_path:
             return self.__convert_class_to_path(class_name)
         else:
