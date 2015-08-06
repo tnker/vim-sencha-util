@@ -6,6 +6,144 @@ import sys
 import json
 import re
 
+# {{{ class SenchaParser_Info
+
+class SenchaParser_Info(object):
+
+    workspace_path = None
+
+    app_path = None
+
+    major_version = None
+
+    full_version = None
+
+    framework_name = None
+
+    current_path = None
+
+    is_classic = False
+
+    is_morden = False
+
+    __re = None
+
+    # {{{ __init__()
+
+    def __init__(self):
+        self.__re = SenchaParser_Regex()
+
+    # }}}
+    # {{{ setup(path)
+
+    def setup(self, path):
+        """
+        ルートディレクトリパス取得
+        """
+        self.app_path = self.__get_sencha_dir(path)
+        self.workspace_path = self.__get_workspace_dir(path)
+        """
+        フレームワーク情報取得
+        """
+        config_path = '{0}/.sencha/app/sencha.cfg'.format(self.app_path)
+        if os.path.isfile(config_path):
+            fp = open(config_path)
+            ln = fp.readline()
+            while ln:
+                is_framework_version = self.__parse_framework_version(ln)
+                is_framework_name = self.__parse_framework_name(ln)
+                if is_framework_version  and is_framework_name:
+                    break
+                ln = fp.readline()
+            fp.close()
+
+    # }}}
+    # {{{ load(path)
+
+    def load(self, path):
+        self.__set_src_dir(path)
+        self.current_path = path
+
+    # }}}
+    # {{{ is_version(major_version, minor_version = None)
+
+    def is_version(self, major_version, minor_version = None):
+        return major_version == self.major_version
+
+    # }}}
+    # {{{ __set_src_dir(path)
+
+    def __set_src_dir(self, path):
+        """
+        プロジェクトディレクトリ以外のフォルダ名が
+        該当した場合、フラグが立ってしまうので要修正
+        """
+        if self.is_version('6'):
+            self.is_classic = 'classic' in path
+            self.is_morden = 'morden' in path
+
+    # }}}
+    # {{{ __get_sencha_dir(path)
+
+    def __get_sencha_dir(self, path):
+        parent_path = os.path.abspath(os.path.dirname(path))
+        path = None
+        paths = parent_path.split('/')
+        while len(paths) > 1:
+            tmp_path = '/'.join(paths)
+            is_sencha_dir = os.path.isdir('{0}/.sencha'.format(tmp_path))
+            if is_sencha_dir:
+                path = tmp_path
+                break
+            else:
+                paths = paths[:-1]
+        return path
+
+    # }}}
+    # {{{ __get_workspace_dir(path)
+
+    def __get_workspace_dir(self, path):
+        parent_path = os.path.abspath(os.path.dirname(path))
+        path = None
+        paths = parent_path.split('/')
+        while len(paths) > 1:
+            tmp_path = '/'.join(paths)
+            is_sencha_dir = os.path.isdir('{0}/.sencha/workspace'.format(tmp_path))
+            if is_sencha_dir:
+                path = tmp_path
+                break
+            else:
+                paths = paths[:-1]
+        return path
+
+    # }}}
+    # {{{ __parse_framework_version(string)
+
+    def __parse_framework_version(self, string):
+        if string is None or self.full_version:
+            return True
+        m = self.__re.framework_version.search(string)
+        if m:
+            self.full_version = m.groups()[0]
+            self.major_version = self.full_version[:1]
+            return True
+        return False
+
+    # }}}
+    # {{{ __parse_framework_name(string)
+
+    def __parse_framework_name(self, string):
+        if string is None or self.framework_name:
+            return True
+        m = self.__re.framework_name.search(string)
+        if m:
+            self.framework_name = m.groups()[0]
+            return True
+        return False
+
+    # }}}
+
+# }}}
 # {{{ class SenchaParser_Regex
 
 class SenchaParser_Regex(object):
@@ -49,22 +187,6 @@ class SenchaParser_Regex(object):
 
 class SenchaParser(object):
 
-    __workspace_path = None
-
-    __app_path = None
-
-    __framework_name = None
-
-    __major_version = None
-
-    __full_version = None
-
-    __is_classic_dir = False
-
-    __is_morden_dir = False
-
-    __current_path = None
-
     __class_name = None
 
     __extend_name = None
@@ -85,40 +207,31 @@ class SenchaParser(object):
 
     __bootstrap = None
 
+    __info = None
+
     # {{{ __init__()
 
     def __init__(self):
         self.__re = SenchaParser_Regex()
         self.__bootstrap = SenchaParser_Bootstrap()
         self.__requires = SenchaParser_Requires()
+        self.__info = SenchaParser_Info()
 
     # }}}
     # {{{ setup(path)
 
     def setup(self, path):
         """
-        ルートディレクトリパス取得
+        設定情報ロード
         """
-        self.__app_path = app_dir = self.__get_sencha_dir(path)
-        self.__workspace_path = self.__get_workspace_dir(path)
-        """
-        フレームワーク情報取得
-        """
-        config_path = '{0}/.sencha/app/sencha.cfg'.format(app_dir)
-        if os.path.isfile(config_path):
-            fp = open(config_path)
-            ln = fp.readline()
-            while ln:
-                is_framework_version = self.__parse_framework_version(ln)
-                is_framework_name = self.__parse_framework_name(ln)
-                if is_framework_version  and is_framework_name:
-                    break
-                ln = fp.readline()
-            fp.close()
+        self.__info.setup(path)
         """
         バージョンに応じたapp/bootstrap.jsonを辞書型で取得
         """
-        self.__bootstrap.load(app_dir, self.is_version('6'))
+        self.__bootstrap.load(
+            self.__info.app_path,
+            self.is_version('6')
+        )
 
     # }}}
     # {{{ load_file(path)
@@ -127,8 +240,7 @@ class SenchaParser(object):
         """
         参照コードが設置ディレクトリチェック
         """
-        self.__set_src_dir(path)
-        self.__current_path = path
+        self.__info.load(path)
         """
         """
         if os.path.isfile(path):
@@ -147,11 +259,8 @@ class SenchaParser(object):
     # {{{ open_file(vim, path)
 
     def open_file(self, vim, path):
-#        print(self.__workspace_path)
-#        print(self.__app_path)
         print(path)
-#        return
-        if vim and path and self.__current_path != path:
+        if vim and path and self.__info.current_path != path:
             if os.path.isfile(path):
                 vim.command('tabnew {0}'.format(path))
 
@@ -162,26 +271,22 @@ class SenchaParser(object):
         """
         xtypeに指定されている文字列から取得
         """
-        m = self.__re.xtype_name.search(line)
-        if m:
-            class_name = self.__bootstrap.search(
-                m.groups()[0],
-                'widget',
-                self.is_version('6'))
-            return self.get_class(class_name=class_name)
+        path = self.get_xtype(line)
         """
         シングルクォーテーションで括られている
         文字列からクラス名の取得を試みる
         """
-        m = self.__re.namespace.search(line)
-        if m:
-            return self.get_class(class_name=m.groups()[0])
+        if not path:
+            m = self.__re.namespace.search(line)
+            if m:
+               path = self.get_class(class_name=m.groups()[0])
+        return path
 
     # }}}
     # {{{ get_class(line, class_name, is_path = True)
 
     def get_class(self, line = None, class_name = None, is_path = True):
-        if not class_name:
+        if not class_name and line:
             m = self.__re.namespace.search(line)
             if m:
                 class_name = m.groups()[0]
@@ -194,7 +299,14 @@ class SenchaParser(object):
     # {{{ get_xtype(line, is_path = True)
 
     def get_xtype(self, line, is_path = True):
-        pass
+        m = self.__re.xtype_name.search(line)
+        if m:
+            class_name = self.__bootstrap.search(
+                m.groups()[0],
+                'widget',
+                self.is_version('6'))
+            return self.get_class(class_name=class_name)
+        return None
 
     # }}}
     # {{{ get_controller(path, is_path = True)
@@ -230,50 +342,13 @@ class SenchaParser(object):
     # {{{ is_version(major_version, minor_version = None)
 
     def is_version(self, major_version, minor_version = None):
-        return major_version == self.__major_version
+        return self.__info.is_version(major_version, minor_version)
 
     # }}}
     # {{{ __dispose()
 
     def __dispose(self):
         pass
-
-    # }}}
-    # {{{ __set_src_dir(path)
-
-    def __set_src_dir(self, path):
-        """
-        プロジェクトディレクトリ以外のフォルダ名が
-        該当した場合、フラグが立ってしまうので要修正
-        """
-        if self.is_version('6'):
-            self.__is_classic_dir = 'classic' in path
-            self.__is_morden_dir = 'morden' in path
-
-    # }}}
-    # {{{ __parse_framework_version(string)
-
-    def __parse_framework_version(self, string):
-        if string is None or self.__full_version:
-            return True
-        m = self.__re.framework_version.search(string)
-        if m:
-            self.__full_version = m.groups()[0]
-            self.__major_version = self.__full_version[:1]
-            return True
-        return False
-
-    # }}}
-    # {{{ __parse_framework_name(string)
-
-    def __parse_framework_name(self, string):
-        if string is None or self.__framework_name:
-            return True
-        m = self.__re.framework_name.search(string)
-        if m:
-            self.__framework_name = m.groups()[0]
-            return True
-        return False
 
     # }}}
     # {{{ __parse_class_name(string)
@@ -368,64 +443,12 @@ class SenchaParser(object):
                 return True
 
     # }}}
-    # {{{ __get_sencha_dir(path)
-
-    def __get_sencha_dir(self, path):
-        parent_path = os.path.abspath(os.path.dirname(path))
-        path = None
-        paths = parent_path.split('/')
-        while len(paths) > 1:
-            tmp_path = '/'.join(paths)
-            is_sencha_dir = os.path.isdir('{0}/.sencha'.format(tmp_path))
-            if is_sencha_dir:
-                path = tmp_path
-                break
-            else:
-                paths = paths[:-1]
-        return path
-
-    # }}}
-    # {{{ __get_workspace_dir(path)
-
-    def __get_workspace_dir(self, path):
-        parent_path = os.path.abspath(os.path.dirname(path))
-        path = None
-        paths = parent_path.split('/')
-        while len(paths) > 1:
-            tmp_path = '/'.join(paths)
-            is_sencha_dir = os.path.isdir('{0}/.sencha/workspace'.format(tmp_path))
-            if is_sencha_dir:
-                path = tmp_path
-                break
-            else:
-                paths = paths[:-1]
-        return path
-
-    # }}}
-    # {{{ __get_framework_version(sencha_dir_path)
-
-    def __get_framework_version(self, sencha_dir_path):
-        cfg_path = '{0}/.sencha/app/sencha.cfg'.format(sencha_dir_path)
-        if os.path.isfile(cfg_path):
-            fp = open(cfg_path)
-            cfg_line = fp.readline()
-            while cfg_line:
-                m = self.__re.framework_version.search(cfg_line)
-                if m and m.start(0) != -1 and m.end(0) != -1:
-                    cfg_data = cfg_line[m.end(0)+1:]
-                    break
-                cfg_line = fp.readline()
-            fp.close()
-            return cfg_data
-        else:
-            return None
-
-    # }}}
     # {{{ __convert_class_to_path(class_name)
 
     def __convert_class_to_path(self, class_name):
         if not class_name:
             return ''
+        info = self.__info
         bootstrap = self.__bootstrap
         dir_name = ''
         src_path = ''
@@ -452,8 +475,8 @@ class SenchaParser(object):
         FIXME: sencha-core等のパッケージを参照している場合の対応
         """
         if app_name and app_name.lower() == 'ext':
-            dir_name = '{0}/src/'.format(self.__framework_name)
-            app_path = self.__workspace_path
+            dir_name = '{0}/src/'.format(info.framework_name)
+            app_path = info.workspace_path
             """
             通常のSDK配下にある前提でパスを生成する
             TODO: 外部メソッドもしくはクラスに分離したほうが良い？
@@ -465,16 +488,16 @@ class SenchaParser(object):
                 return src_path
             else:
                 dir_name = 'packages/sencha-core/src/'
-                if app_path.split('/')[-1:][0] != self.__framework_name:
+                if app_path.split('/')[-1:][0] != info.framework_name:
                     dir_name = '{0}/{1}'.format(
-                        self.__framework_name,
+                        info.framework_name,
                         dir_name)
                 class_path = self.__re.appname.sub(dir_name, class_name)
                 class_path = class_path.replace('.', '/') + '.js'
                 src_path = '{0}/{1}'.format(app_path, class_path)
                 return src_path
         else:
-            app_path = self.__app_path
+            app_path = info.app_path
             class_path = self.__re.appname.sub(dir_name, class_name)
             class_path = class_path.replace('.', '/') + '.js'
             src_path = '{0}/{1}'.format(app_path, class_path)
