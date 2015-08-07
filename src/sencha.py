@@ -24,7 +24,7 @@ class SenchaParser_Info(object):
 
     is_classic = False
 
-    is_morden = False
+    is_modern = False
 
     __re = None
 
@@ -56,6 +56,11 @@ class SenchaParser_Info(object):
                     break
                 ln = fp.readline()
             fp.close()
+        """
+        ExtJS6の場合はext固定
+        """
+        if self.is_version('6'):
+            self.framework_name = 'ext'
 
     # }}}
     # {{{ load(path)
@@ -80,7 +85,7 @@ class SenchaParser_Info(object):
         """
         if self.is_version('6'):
             self.is_classic = 'classic' in path
-            self.is_morden = 'morden' in path
+            self.is_modern = 'modern' in path
 
     # }}}
     # {{{ __get_sencha_dir(path)
@@ -462,20 +467,27 @@ class SenchaParser(object):
         を判断してパス生成処理を変える
         """
         if self.is_version('6'):
-            pass
-        else:
-            dir_name = 'app.'
-            if bootstrap.bootstrap:
-                class_info = bootstrap.bootstrap['classes'].get(class_name)
+            if info.is_classic:
+                dir_name = 'classic/src/'
+            elif info.is_modern:
+                dir_name = 'modern/src/'
             else:
-                pass
+                dir_name = 'app/'
+        else:
+            dir_name = 'app/'
         """
         コンバート対象クラスがSenchaの基底クラスの場合は
         参照先ディレクトリ名を上書き
         FIXME: sencha-core等のパッケージを参照している場合の対応
         """
         if app_name and app_name.lower() == 'ext':
-            dir_name = '{0}/src/'.format(info.framework_name)
+            if self.is_version('6'):
+                if info.is_classic:
+                    dir_name = '{0}/classic/classic/src/'.format(info.framework_name)
+                elif info.is_modern:
+                    dir_name = '{0}/modern/modern/src/'.format(info.framework_name)
+            else:
+                dir_name = '{0}/src/'.format(info.framework_name)
             app_path = info.workspace_path
             """
             通常のSDK配下にある前提でパスを生成する
@@ -484,10 +496,11 @@ class SenchaParser(object):
             class_path = self.__re.appname.sub(dir_name, class_name)
             class_path = class_path.replace('.', '/') + '.js'
             src_path = '{0}/{1}'.format(app_path, class_path)
-            if os.path.isfile(src_path):
-                return src_path
-            else:
-                dir_name = 'packages/sencha-core/src/'
+            if not os.path.isfile(src_path):
+                if self.is_version('6'):
+                    dir_name = 'packages/core/src/'
+                else:
+                    dir_name = 'packages/sencha-core/src/'
                 if app_path.split('/')[-1:][0] != info.framework_name:
                     dir_name = '{0}/{1}'.format(
                         info.framework_name,
@@ -495,12 +508,17 @@ class SenchaParser(object):
                 class_path = self.__re.appname.sub(dir_name, class_name)
                 class_path = class_path.replace('.', '/') + '.js'
                 src_path = '{0}/{1}'.format(app_path, class_path)
-                return src_path
         else:
             app_path = info.app_path
             class_path = self.__re.appname.sub(dir_name, class_name)
             class_path = class_path.replace('.', '/') + '.js'
             src_path = '{0}/{1}'.format(app_path, class_path)
+            if not os.path.isfile(src_path):
+                dir_name = 'app/'
+                app_path = info.app_path
+                class_path = self.__re.appname.sub(dir_name, class_name)
+                class_path = class_path.replace('.', '/') + '.js'
+                src_path = '{0}/{1}'.format(app_path, class_path)
         return src_path
 
     # }}}
@@ -514,7 +532,7 @@ class SenchaParser_Bootstrap(object):
 
     __bootstrap = None
 
-    __morden = None
+    __modern = None
 
     __classic = None
 
@@ -552,17 +570,17 @@ class SenchaParser_Bootstrap(object):
         pass
 
     # }}}
-    # {{{ getter.morden
+    # {{{ getter.modern
 
     @property
-    def morden(self):
-        return self.__morden
+    def modern(self):
+        return self.__modern
 
     # }}}
-    # {{{ setter.morden
+    # {{{ setter.modern
 
-    @morden.setter
-    def morden(self, v):
+    @modern.setter
+    def modern(self, v):
         pass
 
     # }}}
@@ -584,7 +602,7 @@ class SenchaParser_Bootstrap(object):
 
     def load(self, app_dir, is6):
         if is6:
-            self.__morden = self.__load_json(app_dir, 'morden')
+            self.__modern = self.__load_json(app_dir, 'modern')
             self.__classic = self.__load_json(app_dir, 'classic')
         else:
             self.__bootstrap = self.__load_json(app_dir, 'bootstrap')
@@ -598,13 +616,16 @@ class SenchaParser_Bootstrap(object):
         temp = None
         if not alias:
             return temp
-        if is6:
-            if not temp:
-                temp = self.__search_alias(alias, prefix, self.classic['classes'])
-            if not temp:
-                temp = self.__search_alias(alias, prefix, self.morden['classes'])
-        else:
-            temp = self.__search_alias(alias, prefix, self.bootstrap['classes'])
+        try:
+            if is6:
+                if not temp:
+                    temp = self.__search_alias(alias, prefix, self.classic['classes'])
+                if not temp:
+                    temp = self.__search_alias(alias, prefix, self.modern['classes'])
+            else:
+                temp = self.__search_alias(alias, prefix, self.bootstrap['classes'])
+        except:
+            return ''
         return temp
 
     # }}}
