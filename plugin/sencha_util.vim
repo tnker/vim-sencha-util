@@ -18,6 +18,7 @@ command! SenchaParserOpenViewModel call sencha_parser#openviewmodel(expand('%:p'
 command! SenchaParserOpenViewController call sencha_parser#openviewcontroller(expand('%:p'))
 command! SenchaParserOpenExtend call sencha_parser#openextend(expand('%:p'))
 command! SenchaParserReadCurrentLine call sencha_parser#readcurrentline(expand('%:p'))
+command! SenchaParserGetHandler call sencha_parser#gethandler(expand('%:p'))
 
 let &cpo = s:save_cpo
 unlet s:save_cpo

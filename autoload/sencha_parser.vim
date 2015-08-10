@@ -24,8 +24,8 @@ endfunction
 function! sencha_parser#readcurrentline(file)
     python sencha.setup(vim.eval('a:file'))
     python sencha.load_file(vim.eval('a:file'))
-    python classname = sencha.read_line(vim.current.line)
-    python sencha.open_file(vim, classname)
+    python classname, cnt = sencha.read_line(vim.current.line)
+    python sencha.open_file(vim, classname, cnt)
 endfunction
 
 let &cpo = s:save_cpo
