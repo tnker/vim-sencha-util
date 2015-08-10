@@ -26,12 +26,12 @@ class SenchaParser_Info(object):
 
     is_modern = False
 
-    __re = None
+    re = None
 
     # {{{ __init__()
 
-    def __init__(self):
-        self.__re = SenchaParser_Regex()
+    def __init__(self, re):
+        self.re = re
 
     # }}}
     # {{{ setup(path)
@@ -49,10 +49,14 @@ class SenchaParser_Info(object):
         if os.path.isfile(config_path):
             fp = open(config_path)
             ln = fp.readline()
+            is_framework_version = False
+            is_framework_name = False
             while ln:
-                is_framework_version = self.__parse_framework_version(ln)
-                is_framework_name = self.__parse_framework_name(ln)
-                if is_framework_version  and is_framework_name:
+                if not is_framework_version:
+                    is_framework_version = self.__parse_framework_version(ln)
+                if not is_framework_name:
+                    is_framework_name = self.__parse_framework_name(ln)
+                if is_framework_version and is_framework_name:
                     break
                 ln = fp.readline()
             fp.close()
@@ -125,9 +129,7 @@ class SenchaParser_Info(object):
     # {{{ __parse_framework_version(string)
 
     def __parse_framework_version(self, string):
-        if string is None or self.full_version:
-            return True
-        m = self.__re.framework_version.search(string)
+        m = self.re.framework_version.search(string)
         if m:
             self.full_version = m.groups()[0]
             self.major_version = self.full_version[:1]
@@ -138,9 +140,7 @@ class SenchaParser_Info(object):
     # {{{ __parse_framework_name(string)
 
     def __parse_framework_name(self, string):
-        if string is None or self.framework_name:
-            return True
-        m = self.__re.framework_name.search(string)
+        m = self.re.framework_name.search(string)
         if m:
             self.framework_name = m.groups()[0]
             return True
@@ -187,7 +187,7 @@ class SenchaParser_Regex(object):
     alias_st = re.compile('[\s]*(controller|viewModel)[\s]*:[\s]*\{[\s]*$')
     alias_ed = re.compile('[\s]*\}[\s,]*$')
     alias_type = re.compile('^[\s]*type[\s]*:[\s]*[\'\"]([\S]+)[\'\"]')
-    handler = re.compile('^[\s]*handler[\s]*:[\s]*[\"\']([a-zA-Z]*)[\"\'][\s,]*')
+    handler = re.compile('^[\s]*[\sa-zA-Z]*:[\s]*[\"\']([a-zA-Z]*)[\"\'][\s,]*')
 
 # }}}
 # {{{ class SenchaParser_Common
@@ -198,7 +198,7 @@ class SenchaParser_Common(object):
 
     def __init__(self):
         self.re = SenchaParser_Regex()
-        self.info = SenchaParser_Info()
+        self.info = SenchaParser_Info(self.re)
 
     # }}}
 
@@ -308,6 +308,8 @@ class SenchaParser(SenchaParser_Base):
             if os.path.isfile(path):
                 vim.command('tabnew {0}'.format(path))
                 vim.command('{0}'.format(row_index))
+        elif vim and path and self.info.current_path == path:
+            vim.command('{0}'.format(row_index))
 
     # }}}
     # {{{ read_line(line)
