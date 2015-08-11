@@ -331,11 +331,7 @@ class SenchaParser(SenchaParser_Base):
         if not path:
             m = self.re.namespace.search(line)
             if m:
-               path = self.get_class(class_name=m.groups()[0])
-        """
-        """
-        if not cnt:
-            cnt = 0
+                path = self.get_class(class_name=m.groups()[0])
         return (path, cnt)
 
     # }}}
@@ -401,14 +397,14 @@ class SenchaParser(SenchaParser_Base):
             if func_path:
                 return (func_path, cnt)
         else:
-            return (None, None)
+            return (None, 0)
         require_paths = self.get_requires(path)
         for class_path in require_paths:
             ctrl_path = self.get_controller(class_path)
             func_path, cnt = self.__parse_function_name(ctrl_path, func_name)
             if func_path:
                 return (func_path, cnt)
-        return (None, None)
+        return (None, 0)
 
     # }}}
     # {{{ get_requires(path)
@@ -460,9 +456,9 @@ class SenchaParser(SenchaParser_Base):
             if m:
                 return (path, cnt)
             else:
-                return (None, None)
+                return (None, 0)
         except:
-            return (None, None)
+            return (None, 0)
 
     # }}}
     # {{{ __parse_class_name(string)
@@ -563,7 +559,6 @@ class SenchaParser(SenchaParser_Base):
         if not class_name:
             return ''
         info = self.info
-        bootstrap = self.__bootstrap
         dir_name = ''
         src_path = ''
         """
