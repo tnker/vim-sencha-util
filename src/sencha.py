@@ -280,11 +280,12 @@ class SenchaParser(SenchaParser_Base):
     # }}}
     # {{{ load_file(path)
 
-    def load_file(self, path):
+    def load_file(self, path, is_update = True):
         """
         参照コードが設置ディレクトリチェック
         """
-        self.info.load(path)
+        if is_update:
+            self.info.load(path)
         """
         """
         if os.path.isfile(path):
@@ -410,7 +411,8 @@ class SenchaParser(SenchaParser_Base):
     # {{{ get_requires(path)
 
     def get_requires(self, path):
-        self.load_file(path)
+        self.__dispose()
+        self.load_file(path, False)
         class_name = self.__class_name
         app_name = self.__parse_app_name(class_name)
         dir_name = self.__convert_base_to_path(app_name)
@@ -634,6 +636,17 @@ class SenchaParser(SenchaParser_Base):
             else:
                 dir_name = 'app/'
         return dir_name
+
+    # }}}
+    # {{{ __dispose()
+
+    def __dispose(self):
+        self.__class_name = None
+        self.__override_name = None
+        self.__viewmodel_alias = None
+        self.__controller_alias = None
+        self.__is_viewmodel_alias_loading = False
+        self.__is_controller_alias_loading = False
 
     # }}}
 
