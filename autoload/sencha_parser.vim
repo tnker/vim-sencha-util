@@ -28,5 +28,17 @@ function! sencha_parser#readcurrentline(file)
     python sencha.open_file(vim, classname, cnt)
 endfunction
 
+function! sencha_parser#getrequires(file)
+    python sencha.setup(vim.eval('a:file'))
+    python result = sencha.get_requires(vim.eval('a:file'))
+    return pyeval('result')
+endfunction
+
+function! sencha_parser#getextendtree(file)
+    python sencha.setup(vim.eval('a:file'))
+    python result = sencha.get_extend_tree(vim.eval('a:file'))
+    return pyeval('result')
+endfunction
+
 let &cpo = s:save_cpo
 unlet s:save_cpo

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # coding: utf-8
 
 import os
@@ -9,6 +9,20 @@ import re
 # {{{ class SenchaParser_Info
 
 class SenchaParser_Info(object):
+    """
+    参照しているSenchaプロジェクトの解析クラス
+
+    Args:
+        workspace_path: ワークスペースディレクトリパス
+        app_path: アプリケーションディレクトリパス
+        major_version: 利用SDKメジャーバージョン
+        full_version: 利用SDKフルバージョン（マイナー込み）
+        framework_name: 利用SDK名（ext or touch）
+        current_path: プラグイン処理実行中ファイルパス
+        is_classic: Desktop用ディレクトリフラグ（only ExtJS6）
+        is_modern: Mobile用ディレクトリフラグ（only ExtJS6）
+        re: 処理中に利用する正規表現リスト
+    """
 
     workspace_path = None
 
@@ -31,6 +45,12 @@ class SenchaParser_Info(object):
     # {{{ __init__()
 
     def __init__(self, re):
+        """
+        初期化処理
+
+        Args:
+            re: 正規表現リスト
+        """
         self.re = re
 
     # }}}
@@ -39,6 +59,9 @@ class SenchaParser_Info(object):
     def setup(self, path):
         """
         ルートディレクトリパス取得
+
+        Args:
+            path: プラグイン参照中ファイルパス
         """
         self.app_path = self.__get_sencha_dir(path)
         self.workspace_path = self.__get_workspace_dir(path)
@@ -70,6 +93,12 @@ class SenchaParser_Info(object):
     # {{{ load(path)
 
     def load(self, path):
+        """
+        参照ファイルを起点にして各フラグ初期化
+
+        Args:
+            path: プラグイン参照中ファイルパス
+        """
         self.__set_src_dir(path)
         self.current_path = path
 
@@ -77,6 +106,18 @@ class SenchaParser_Info(object):
     # {{{ is_version(major_version, minor_version = None)
 
     def is_version(self, major_version, minor_version = None):
+        """
+        バージョンチェック処理
+        引数に設定した値と本クラスで読み込んだバージョンが
+        一致しているかどうかをチェックする
+
+        Args:
+            major_version: メジャーバージョン
+            minor_version: マイナーバージョン
+
+        Returns:
+            True or False
+        """
         return major_version == self.major_version
 
     # }}}
@@ -86,6 +127,9 @@ class SenchaParser_Info(object):
         """
         プロジェクトディレクトリ以外のフォルダ名が
         該当した場合、フラグが立ってしまうので要修正
+
+        Args:
+            path: プラグイン参照中ファイルパス
         """
         if self.is_version('6'):
             self.is_classic = 'classic' in path
@@ -154,7 +198,7 @@ class SenchaParser_Info(object):
 class SenchaParser_Regex(object):
     """SenchaPaeserパッケージ上で利用する正規表現を一元管理用
 
-    Attributes:
+    Args:
         appname: アプリケーションの名前空間マッチ用
         framework_version: sencha.cfgからsdkバージョン抽出用
         xtype_name: xtypeで指定されている文字列を取得する
@@ -177,7 +221,7 @@ class SenchaParser_Regex(object):
     framework_name = re.compile('^[\s]*app.framework[\s]*=[\s]*([a-zA-Z]+)$')
     xtype_name = re.compile('^[\s]*xtype[\s]*:[\s]*\'([a-zA-Z\-\_]+)\'[\s\,]*$')
     extend_comment = re.compile('^.+@(extend|override)[ ]+(.+)')
-    extend_property = re.compile('^.+(extend|override)[ :]+[ ]+\'(.+)\'')
+    extend_property = re.compile('^[\s]+(extend|override)[ :]+[ ]+[\"\'](.+)[\"\']')
     class_comment = re.compile('^.+@class[ ]+(.+)')
     class_define = re.compile('^Ext.define\([\W\']+([\w\.]+)[\W\']')
     namespace = re.compile('[\s]*[\'\"]([\S]+)[\'\"]')
@@ -193,10 +237,17 @@ class SenchaParser_Regex(object):
 # {{{ class SenchaParser_Common
 
 class SenchaParser_Common(object):
+    """各SenchaParserに付与するユーティリティクラス
+
+    Args:
+        re: 各処理で利用している正規表現リスト
+        info: 参照しているSenchaプロジェクトの設定情報を取り扱う
+    """
 
     # {{{ __init__()
 
     def __init__(self):
+        """初期化処理"""
         self.re = SenchaParser_Regex()
         self.info = SenchaParser_Info(self.re)
 
@@ -206,12 +257,18 @@ class SenchaParser_Common(object):
 # {{{ class SenchaParser_Base
 
 class SenchaParser_Base(object):
+    """各SenchaParserクラスの規定クラス
+
+    Args:
+        __instance: 全てのクラスに利用するユーティリティプロパティ
+    """
 
     __instance = None
 
     # {{{ __init__()
 
     def __init__(self):
+        """初期化処理"""
         if SenchaParser_Base.__instance is None:
             SenchaParser_Base.__instance = SenchaParser_Common()
         super(SenchaParser_Base, self).__init__()
@@ -221,6 +278,11 @@ class SenchaParser_Base(object):
 
     @property
     def re(self):
+        """正規表現リスト
+
+        Returns:
+            SenchaParser_Regexインスタンス
+        """
         return SenchaParser_Base.__instance.re
 
     # }}}
@@ -228,6 +290,11 @@ class SenchaParser_Base(object):
 
     @property
     def info(self):
+        """参照プロジェクト環境設定情報取扱クラス
+
+        Returns:
+            SenchaParser_Infoインスタンス
+        """
         return SenchaParser_Base.__instance.info
 
     # }}}
@@ -236,6 +303,21 @@ class SenchaParser_Base(object):
 # {{{ class SenchaParser
 
 class SenchaParser(SenchaParser_Base):
+    """
+    Senchaのパーサープラグインの各処理の
+    エントリーポイントとなるベースクラス
+
+    Args:
+        __class_name: 処理対象ファイルのクラス名
+        __extend_name: 処理対象ファイルの親クラス名
+        __override_name: 処理対象ファイルのオーバーライド名
+        __controller_alias: 処理対象ViewControllerエイリアス（only View Class）
+        __viewmodel_alias: 処理対象ViewModelエイリアス（only View Class）
+        __is_controller_alias_loading: ViewControllerエイリアスパース時処理フラグ
+        __is_viewmodel_alias_loading: ViewModelエイリアスパース時処理フラグ
+        __requires: Requiresモジュールプロパティ
+        __bootstrap: Bootstrapモジュールプロパティ
+    """
 
     __class_name = None
 
@@ -245,9 +327,9 @@ class SenchaParser(SenchaParser_Base):
 
     __controller_alias = None
 
-    __is_controller_alias_loading = False
-
     __viewmodel_alias = None
+
+    __is_controller_alias_loading = False
 
     __is_viewmodel_alias_loading = False
 
@@ -258,6 +340,9 @@ class SenchaParser(SenchaParser_Base):
     # {{{ __init__()
 
     def __init__(self):
+        """
+        初期化処理
+        """
         self.__bootstrap = SenchaParser_Bootstrap()
         self.__requires = SenchaParser_Requires()
         super(SenchaParser, self).__init__()
@@ -268,6 +353,9 @@ class SenchaParser(SenchaParser_Base):
     def setup(self, path):
         """
         設定情報ロード
+
+        Args:
+            path: 
         """
         self.info.setup(path)
         """
@@ -278,11 +366,15 @@ class SenchaParser(SenchaParser_Base):
         )
 
     # }}}
-    # {{{ load_file(path)
+    # {{{ load_file(path, is_update = True)
 
     def load_file(self, path, is_update = True):
         """
         参照コードが設置ディレクトリチェック
+
+        Args:
+            path: 読み込み対象ファイルパス
+            is_update: Infoクラスの初期化フラグ
         """
         if is_update:
             self.info.load(path)
@@ -304,6 +396,14 @@ class SenchaParser(SenchaParser_Base):
     # {{{ open_file(vim, path, row_index = 0)
 
     def open_file(self, vim, path, row_index = 0):
+        """
+        引数に渡されたパスのファイルが存在すればvim上で開く
+
+        Args:
+            vim: vimを直接操作するためのモジュール
+            path: 新規タブで開く対象ファイル
+            row_index: 対象ファイルのカーソル行数を指定する
+        """
         print(path)
         if vim and path and self.info.current_path != path:
             if os.path.isfile(path):
@@ -319,6 +419,11 @@ class SenchaParser(SenchaParser_Base):
         cnt = 0
         """
         xtypeに指定されている文字列から取得
+
+        TODO: ViewController/ViewModelのエイリアスは現在不具合有
+
+        Args:
+            line:
         """
         path = self.get_xtype(line)
         """
@@ -390,6 +495,8 @@ class SenchaParser(SenchaParser_Base):
     # {{{ get_handler(path, line)
 
     def get_handler(self, path, line):
+        """
+        """
         m = self.re.handler.search(line)
         if m:
             func_name = m.groups()[0]
@@ -399,9 +506,9 @@ class SenchaParser(SenchaParser_Base):
                 return (func_path, cnt)
         else:
             return (None, 0)
-        require_paths = self.get_requires(path)
-        for class_path in require_paths:
-            ctrl_path = self.get_controller(class_path)
+        require_infos = self.get_requires(path)
+        for require_info in require_infos:
+            ctrl_path = self.get_controller(require_info['path'])
             func_path, cnt = self.__parse_function_name(ctrl_path, func_name)
             if func_path:
                 return (func_path, cnt)
@@ -411,8 +518,26 @@ class SenchaParser(SenchaParser_Base):
     # {{{ get_requires(path)
 
     def get_requires(self, path):
+        """
+        解析対象ファイルにrequireされているリストの取得
+
+        Args:
+            path: 解析対象ファイルパス
+
+        Returns:
+            list[{
+                'name': xxx,
+                'path': xxx
+            }]
+        """
+        """
+        データキャッシュクリア
+        """
         self.__dispose()
-        self.load_file(path, False)
+        """
+        解析対象初期化処理
+        """
+        self.load_file(path)
         class_name = self.__class_name
         app_name = self.__parse_app_name(class_name)
         dir_name = self.__convert_base_to_path(app_name)
@@ -427,6 +552,40 @@ class SenchaParser(SenchaParser_Base):
                 dir_name,
                 class_name)
         return requires
+
+    # }}}
+    # {{{ get_extend_tree(path)
+
+    def get_extend_tree(self, path):
+        """
+        処理対象クラスの継承元を再帰的にパースし
+        親クラスの一覧を取得する
+
+        Args:
+            path: 処理対象クラスパス
+
+        Returns:
+            list[{
+                'name': xxx,
+                'path': xxx
+            }]
+        """
+        self.__dispose()
+        self.load_file(path)
+        extend_tree = [{
+            'name': self.__class_name,
+            'path': self.__convert_class_to_path(self.__class_name)
+        }]
+        while self.__extend_name:
+            extend_info = {
+                'name': self.__extend_name,
+                'path': self.__convert_class_to_path(self.__extend_name)
+            }
+            extend_tree.append(extend_info)
+            self.__dispose()
+            self.load_file(extend_info['path'])
+
+        return extend_tree
 
     # }}}
     # {{{ __parse_app_name(string)
@@ -642,6 +801,7 @@ class SenchaParser(SenchaParser_Base):
 
     def __dispose(self):
         self.__class_name = None
+        self.__extend_name = None
         self.__override_name = None
         self.__viewmodel_alias = None
         self.__controller_alias = None
@@ -814,7 +974,10 @@ class SenchaParser_Requires(SenchaParser_Base):
         for file_path in self.__find_all_files(dir_path):
             required = self.load_file(file_path, class_name)
             if required:
-                requires.append(file_path)
+                requires.append({
+                    'name': class_name,
+                    'path': file_path
+                })
         return requires
 
     # }}}
@@ -846,15 +1009,10 @@ class SenchaParser_Package(SenchaParser_Base):
 def sencha_util_test(vim, path):
     _sup = SenchaParser()
     _sup.setup(path)
-    _sup.get_handler(path, '   handler: "onNewRecordForm"')
-    #print(_sup.get_controller(path))
-    #print(_sup.get_viewmodel(path))
-    #path = _sup.get_class("   extend: 'App.view.base.Menu',")
-    #if vim:
-    #    vim.command('tabnew {0}'.format(path))
-    #else:
-    #    print(path)
+    _sup.load_file(path)
+    _tree = _sup.get_extend_tree(path)
+    _requires = _sup.get_requires(path)
+    print(_requires)
 
-#sencha_util_test(None, '/Users/tnker/Sites/ws_touch241c/cordova/app/view/Menu.js')
-#sencha_util_test(None, '/Users/tnker/Sites/ws_ext600b/money/app/modern/src/view/revenue/List.js')
+#sencha_util_test(None, '/Users/tnker/Sites/ws_ext600b/money/app/classic/src/view/payment/Panel.js')
 
