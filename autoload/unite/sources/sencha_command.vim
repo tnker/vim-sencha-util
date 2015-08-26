@@ -14,17 +14,13 @@ function! s:source.gather_candidates(args, context)
 
     let trees = sencha_parser#getextendtree(expand('%:p'))
 
-    return map(copy(trees), '{
-    \   "word": v:val.name,
+    return reverse(map(copy(trees), '{
+    \   "word": "- " . v:val.name,
     \   "kind": "file",
     \   "addr": v:val.path,
     \   "action__path": v:val.path,
-    \}')
+    \}'))
 
-"    return [
-"\       {"word": "TEST1", "addr": "TEST1", "kind": "sencha"}
-"\      ,{"word": "TEST2", "addr": "TEST2"}
-"\   ]
 endfunction
 
 " ----------

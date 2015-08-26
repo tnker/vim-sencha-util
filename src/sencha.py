@@ -221,7 +221,7 @@ class SenchaParser_Regex(object):
     framework_name = re.compile('^[\s]*app.framework[\s]*=[\s]*([a-zA-Z]+)$')
     xtype_name = re.compile('^[\s]*xtype[\s]*:[\s]*\'([a-zA-Z\-\_]+)\'[\s\,]*$')
     extend_comment = re.compile('^.+@(extend|override)[ ]+(.+)')
-    extend_property = re.compile('^[\s]+(extend|override)[ :]+[ ]+[\"\'](.+)[\"\']')
+    extend_property = re.compile('^[\s]+(extend|override)[ :]+[ ]*[\"\'](.+)[\"\']')
     class_comment = re.compile('^.+@class[ ]+(.+)')
     class_define = re.compile('^Ext.define\([\W\']+([\w\.]+)[\W\']')
     namespace = re.compile('[\s]*[\'\"]([\S]+)[\'\"]')
@@ -570,16 +570,20 @@ class SenchaParser(SenchaParser_Base):
                 'path': xxx
             }]
         """
+        idx = 1
         self.__dispose()
         self.load_file(path)
         extend_tree = [{
             'name': self.__class_name,
-            'path': self.__convert_class_to_path(self.__class_name)
+            'path': self.__convert_class_to_path(self.__class_name),
+            'index': idx
         }]
         while self.__extend_name:
+            idx += 1
             extend_info = {
                 'name': self.__extend_name,
-                'path': self.__convert_class_to_path(self.__extend_name)
+                'path': self.__convert_class_to_path(self.__extend_name),
+                'index': idx
             }
             extend_tree.append(extend_info)
             self.__dispose()
