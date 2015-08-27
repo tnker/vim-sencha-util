@@ -570,20 +570,20 @@ class SenchaParser(SenchaParser_Base):
                 'path': xxx
             }]
         """
-        idx = 1
         self.__dispose()
         self.load_file(path)
+        class_name = self.__class_name
+        class_path = self.__convert_class_to_path(class_name)
         extend_tree = [{
-            'name': self.__class_name,
-            'path': self.__convert_class_to_path(self.__class_name),
-            'index': idx
+            'name': class_name,
+            'path': class_path
         }]
         while self.__extend_name:
-            idx += 1
+            extend_name = self.__extend_name
+            extend_path = self.__convert_class_to_path(extend_name)
             extend_info = {
-                'name': self.__extend_name,
-                'path': self.__convert_class_to_path(self.__extend_name),
-                'index': idx
+                'name': extend_name,
+                'path': extend_path
             }
             extend_tree.append(extend_info)
             self.__dispose()
@@ -973,11 +973,14 @@ class SenchaParser_Requires(SenchaParser_Base):
     # {{{ search_required(info, dir_name, class_name)
 
     def search_required(self, info, dir_name, class_name):
+        """
+        """
         requires = []
         dir_path = '{0}/{1}'.format(info.app_path, dir_name)
         for file_path in self.__find_all_files(dir_path):
             required = self.load_file(file_path, class_name)
             if required:
+                # FIXME: class_nameが全て検索元クラス名になっている問題の修正
                 requires.append({
                     'name': class_name,
                     'path': file_path
@@ -988,6 +991,15 @@ class SenchaParser_Requires(SenchaParser_Base):
     # {{{ __find_all_files(dir_path)
 
     def __find_all_files(self, dir_path):
+        """
+        引数に渡したパス情報を基点に全ファイルのパス情報を返却する
+
+        Args:
+            dir_path: 検索基点パス
+
+        Returns:
+            list['/file/to/path']
+        """
         for root, dirs, files in os.walk(dir_path):
             yield root
             for file in files:
@@ -1015,8 +1027,6 @@ def sencha_util_test(vim, path):
     _sup.setup(path)
     _sup.load_file(path)
     _tree = _sup.get_extend_tree(path)
-    _requires = _sup.get_requires(path)
-    print(_requires)
 
-#sencha_util_test(None, '/Users/tnker/Sites/ws_ext600b/money/app/classic/src/view/payment/Panel.js')
+sencha_util_test(None, '/Users/tnker/Sites/ws_ext600b/money/app/classic/src/view/payment/Panel.js')
 
