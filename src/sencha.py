@@ -1028,5 +1028,3 @@ def sencha_util_test(vim, path):
     _sup.load_file(path)
     _tree = _sup.get_extend_tree(path)
 
-sencha_util_test(None, '/Users/tnker/Sites/ws_ext600b/money/app/classic/src/view/payment/Panel.js')
-
